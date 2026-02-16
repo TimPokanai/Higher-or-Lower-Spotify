@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import cors from 'cors';
 
 import health from './routes/health.js'
+import createUser from './routes/createUser.js'
 
 // Initialize express app
 const app = express();
@@ -17,5 +18,8 @@ app.get('/', (req: Request, res: Response) => {
 
 // Health route
 app.use('/health', health);
+
+// Dev test route for user creation
+app.use('/dev', createUser);
 
 export default app;
