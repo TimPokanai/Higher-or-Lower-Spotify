@@ -4,6 +4,7 @@ import cors from 'cors';
 
 import health from './routes/health.js'
 import createUser from './routes/createUser.js'
+import createSession from './routes/createSession.js'
 
 // Initialize express app
 const app = express();
@@ -19,7 +20,8 @@ app.get('/', (req: Request, res: Response) => {
 // Health route
 app.use('/health', health);
 
-// Dev test route for user creation
+// Dev test routes
 app.use('/dev', createUser);
+app.use('/dev', createSession);
 
 export default app;
