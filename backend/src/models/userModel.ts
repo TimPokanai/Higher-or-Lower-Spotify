@@ -31,6 +31,7 @@ export interface IUser extends Document {
 }
 
 const LikedSongSchema = new Schema<ILikedSong>(
+
     {
         spotifyId: { type: String, required: true },
         name: { type: String, required: true },
@@ -39,9 +40,11 @@ const LikedSongSchema = new Schema<ILikedSong>(
         popularity: { type: String, required: true }
     },
     { _id: false }
+
 );
 
 const UserSchema = new Schema<IUser>(
+
     {
         spotifyId: { type: String, required: true, unique: true, index: true },
         displayName: { type: String, required: true },
@@ -53,7 +56,8 @@ const UserSchema = new Schema<IUser>(
         likedSongsLastSynced: { type: Date, },
         likedSongsCount: { type: Number, default: 0 }
     },
-    { timestamps: true }
+    { timestamps: true },
+
 );
 
 export default mongoose.model<IUser>('User', UserSchema);
