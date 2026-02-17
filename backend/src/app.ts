@@ -6,6 +6,8 @@ import health from './routes/health.js'
 import createUser from './routes/createUser.js'
 import createSession from './routes/createSession.js'
 
+import auth from './routes/auth.js';
+
 // Initialize express app
 const app = express();
 
@@ -23,5 +25,8 @@ app.use('/health', health);
 // Dev test routes
 app.use('/dev', createUser);
 app.use('/dev', createSession);
+
+// Spotify auth route
+app.use('/auth', auth);
 
 export default app;
