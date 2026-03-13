@@ -112,6 +112,7 @@ router.get('/callback', async (req: Request, res: Response) => {
           user.tokenExpiry = tokenExpiry;
           if (refreshToken) user.refreshToken = refreshToken;
           if (displayName) user.displayName = displayName;
+          // preserve existing highscore, likedSongs and likedSongsLastSynced
           await user.save();
         } else {
           // If refresh token is missing on first-time create, store empty string to satisfy schema
@@ -120,7 +121,10 @@ router.get('/callback', async (req: Request, res: Response) => {
             displayName: displayName || 'Spotify User',
             accessToken,
             refreshToken: refreshToken || '',
-            tokenExpiry
+            tokenExpiry,
+            highscore: 0,
+            likedSongs: [],
+            likedSongsLastSynced: undefined
           });
         }
 
@@ -129,6 +133,7 @@ router.get('/callback', async (req: Request, res: Response) => {
           me: meData,
           spotifyId,
           displayName,
+          tokenExpiresAt: tokenExpiry,
           user
         };
 
