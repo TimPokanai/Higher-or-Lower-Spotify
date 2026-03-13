@@ -1,6 +1,7 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import crypto from 'crypto';
+import fetch from 'node-fetch';
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || 'your_spotify_client_id';
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || 'your_spotify_client_secret';
@@ -67,7 +68,27 @@ router.get('/callback', async (req: Request, res: Response) => {
     }
 
     // we can set cookies or session here later if needed
-    return res.json(data);
+    const accessToken = data.access_token as string | undefined;
+
+    if (!accessToken) {
+      return res.status(500).json({ error: 'No access token returned from Spotify', details: data });
+    }
+
+    try {
+      const meResponse = await fetch('https://api.spotify.com/v1/me', {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+
+      const meData = await meResponse.json();
+
+      if (!meResponse.ok) {
+        return res.status(meResponse.status).json({ error: 'Failed to fetch Spotify profile', details: meData });
+      }
+
+      return res.json({ token: data, me: meData });
+    } catch (err) {
+      return res.status(500).json({ error: 'Error fetching Spotify /me', details: (err as Error).message });
+    }
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error', details: (err as Error).message });
   }
