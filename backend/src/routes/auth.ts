@@ -1,8 +1,8 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import crypto from 'crypto';
-import fetch from 'node-fetch';
 import User from '../models/userModel';
+import spotifyService from '../services/spotifyService';
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || 'your_spotify_client_id';
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || 'your_spotify_client_secret';
@@ -48,27 +48,8 @@ router.get('/callback', async (req: Request, res: Response) => {
   }
 
   try {
-    const params = new URLSearchParams();
-    params.append('code', code);
-    params.append('redirect_uri', REDIRECT_URI);
-    params.append('grant_type', 'authorization_code');
+    const data = await spotifyService.exchangeCodeForToken(code);
 
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + Buffer.from(CLIENT_ID + ':' + CLIENT_SECRET).toString('base64')
-      },
-      body: params
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({ error: data.error || 'Failed to get token' });
-    }
-
-    // we can set cookies or session here later if needed
     const accessToken = data.access_token as string | undefined;
 
     if (!accessToken) {
@@ -76,15 +57,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     }
 
     try {
-      const meResponse = await fetch('https://api.spotify.com/v1/me', {
-        headers: { Authorization: 'Bearer ' + accessToken }
-      });
-
-      const meData = await meResponse.json();
-
-      if (!meResponse.ok) {
-        return res.status(meResponse.status).json({ error: 'Failed to fetch Spotify profile', details: meData });
-      }
+      const meData = await spotifyService.getProfile(accessToken);
 
       // Extract stable Spotify identifier and display name for leaderboard/user mapping
       const spotifyId = (meData && (meData.id as string)) || null;
