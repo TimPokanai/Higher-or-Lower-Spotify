@@ -1,6 +1,7 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import User from '../models/userModel';
 import spotifyService from '../services/spotifyService';
 
@@ -101,6 +102,18 @@ router.get('/callback', async (req: Request, res: Response) => {
           });
         }
 
+        // Attach the MongoDB User ObjectId to the session so frontend can identify the logged-in user
+        if (req.session) {
+          req.session.userId = user._id;
+          // Ensure the session is persisted before responding
+          await new Promise<void>((resolve, reject) => {
+            (req.session as any).save((err: Error | null) => {
+              if (err) return reject(err);
+              resolve();
+            });
+          });
+        }
+
         const result = {
           token: data,
           me: meData,
@@ -119,6 +132,49 @@ router.get('/callback', async (req: Request, res: Response) => {
     }
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error', details: (err as Error).message });
+  }
+});
+
+// Debug endpoint to inspect the first session stored in MongoDB
+router.get('/debug-session', async (req: Request, res: Response) => {
+  try {
+    const db = mongoose.connection.db;
+    const coll = db.collection('sessions');
+    const doc = await coll.findOne({});
+    if (!doc) return res.status(404).json({ error: 'No sessions found' });
+
+    let sessionObj: any = undefined;
+    if (doc.session) {
+      if (typeof doc.session === 'string') {
+        try {
+          sessionObj = JSON.parse(doc.session);
+        } catch {
+          sessionObj = doc.session;
+        }
+      } else {
+        sessionObj = doc.session;
+      }
+    } else {
+      // Fallback: older connect-mongo versions store the whole object
+      sessionObj = doc;
+    }
+
+    // If possible, attach the found session data to the current request session and save
+    if (req.session) {
+      if (sessionObj.userId) req.session.userId = sessionObj.userId;
+      if (sessionObj.cookie) req.session.cookie = sessionObj.cookie;
+      await new Promise<void>((resolve, reject) => {
+        (req.session as any).save((err: Error | null) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+      return res.json(req.session);
+    }
+
+    return res.json(sessionObj);
+  } catch (err) {
+    return res.status(500).json({ error: 'Error querying sessions', details: (err as Error).message });
   }
 });
 

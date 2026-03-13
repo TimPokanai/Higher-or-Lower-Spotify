@@ -12,11 +12,14 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@types/express-session": "^1.18.2",
+    "connect-mongo": "^6.0.0",
     "cors": "^2.8.6",
-    "node-fetch": "^3.3.2",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "mongoose": "^9.2.1"
+    "express-session": "^1.19.0",
+    "mongoose": "^9.2.1",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
