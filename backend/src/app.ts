@@ -10,6 +10,7 @@ import createSession from './routes/createSession.js'
 
 import auth from './routes/auth.js';
 import userRoutes from './routes/userRoutes.js'
+import gameRoutes from './routes/gameRoutes.js'
 
 // Initialize express app
 const app = express();
@@ -58,5 +59,6 @@ app.use('/auth', auth);
 
 // API routes
 app.use('/api', userRoutes);
+app.use('/api/game', gameRoutes)
 
 export default app;
