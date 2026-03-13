@@ -9,6 +9,7 @@ import createUser from './routes/createUser.js'
 import createSession from './routes/createSession.js'
 
 import auth from './routes/auth.js';
+import userRoutes from './routes/userRoutes.js'
 
 // Initialize express app
 const app = express();
@@ -54,5 +55,8 @@ app.use('/dev', createSession);
 
 // Spotify auth route
 app.use('/auth', auth);
+
+// API routes
+app.use('/api', userRoutes);
 
 export default app;
