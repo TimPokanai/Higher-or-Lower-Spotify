@@ -2,6 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import crypto from 'crypto';
 import fetch from 'node-fetch';
+import User from '../models/userModel';
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || 'your_spotify_client_id';
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || 'your_spotify_client_secret';
@@ -85,7 +86,56 @@ router.get('/callback', async (req: Request, res: Response) => {
         return res.status(meResponse.status).json({ error: 'Failed to fetch Spotify profile', details: meData });
       }
 
-      return res.json({ token: data, me: meData });
+      // Extract stable Spotify identifier and display name for leaderboard/user mapping
+      const spotifyId = (meData && (meData.id as string)) || null;
+      const displayName = (meData && (meData.display_name as string)) || null;
+
+      if (!spotifyId) {
+        return res.status(500).json({ error: 'Spotify profile missing id', details: meData });
+      }
+
+      const refreshToken = (data.refresh_token as string | undefined) || undefined;
+      const expiresIn = (data.expires_in as number | string | undefined) || undefined;
+
+      let tokenExpiry = new Date(Date.now() + 3600 * 1000);
+      if (typeof expiresIn === 'number') {
+        tokenExpiry = new Date(Date.now() + expiresIn * 1000);
+      } else if (typeof expiresIn === 'string' && !Number.isNaN(Number(expiresIn))) {
+        tokenExpiry = new Date(Date.now() + Number(expiresIn) * 1000);
+      }
+
+      try {
+        let user = await User.findOne({ spotifyId });
+
+        if (user) {
+          user.accessToken = accessToken;
+          user.tokenExpiry = tokenExpiry;
+          if (refreshToken) user.refreshToken = refreshToken;
+          if (displayName) user.displayName = displayName;
+          await user.save();
+        } else {
+          // If refresh token is missing on first-time create, store empty string to satisfy schema
+          user = await User.create({
+            spotifyId,
+            displayName: displayName || 'Spotify User',
+            accessToken,
+            refreshToken: refreshToken || '',
+            tokenExpiry
+          });
+        }
+
+        const result = {
+          token: data,
+          me: meData,
+          spotifyId,
+          displayName,
+          user
+        };
+
+        return res.json(result);
+      } catch (dbErr) {
+        return res.status(500).json({ error: 'Database error during upsert', details: (dbErr as Error).message });
+      }
     } catch (err) {
       return res.status(500).json({ error: 'Error fetching Spotify /me', details: (err as Error).message });
     }
