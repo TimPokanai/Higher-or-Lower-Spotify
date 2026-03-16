@@ -60,4 +60,31 @@ export async function getProfile(accessToken: string) {
   return data;
 }
 
-export default { exchangeCodeForToken, getProfile };
+// Needs to be tested with mock frontend
+export async function getLikedSongs(accessToken: string) {
+  const resp = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok) {
+    const err: any = new Error('Failed to fetch liked songs');
+    err.status = resp.status;
+    err.details = data;
+    throw err;
+  }
+
+  return (data.items || []).map((item: any) => {
+    const track = item.track || {};
+    return {
+      spotifyId: track.id,
+      name: track.name,
+      artist: (track.artists && track.artists[0] && track.artists[0].name) || '',
+      image: (track.album && track.album.images && track.album.images[0] && track.album.images[0].url) || '',
+      popularity: String(track.popularity ?? 0)
+    };
+  });
+}
+
+export default { exchangeCodeForToken, getProfile, getLikedSongs };
